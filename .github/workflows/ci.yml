@@ -84,7 +84,7 @@ jobs:
 
     - name: Basic Producer Test (send 1 message)
       env:
-        NUM_ORDERS_TO_SEND: 1
+        NUM_ORDERS_TO_SEND: 2
         PRODUCER_PASSWORD: 'OrderSenderP@ssw0rd' # Ensure this matches Makefile/script defaults
       run: make producer
 
@@ -96,14 +96,15 @@ jobs:
         make consumer > consumer_output.log 2>&1 &
         CONSUMER_PID=$!
         # Give the producer time to send and the consumer time to receive
-        sleep 15 # Increase if necessary
+        echo "Waiting for 30 seconds for consumer to process messages..." # Aumentato il tempo
+        sleep 30 # Aumentato da 15 a 30, considera di aumentarlo ulteriormente se necessario
 
         echo "Stopping consumer..."
         kill $CONSUMER_PID
         # Wait for the consumer process to terminate, ignore error if already terminated
         wait $CONSUMER_PID || true
 
-        echo "Consumer Output:"
+        echo "Consumer Output (consumer_output.log):"
         cat consumer_output.log
 
         # Check if the consumer received messages (this is a basic test)
@@ -112,6 +113,10 @@ jobs:
           echo "Consumer test passed: Message received."
         else
           echo "Consumer test failed: No message received indication in logs."
+          # Aggiungi output diagnostico addizionale
+          echo "--- RabbitMQ Container Logs ---"
+          podman logs $(make -s -f Makefile print-container-name) || echo "Failed to get RabbitMQ logs."
+          echo "-----------------------------"
           exit 1
         fi
 
