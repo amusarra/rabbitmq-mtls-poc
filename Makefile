@@ -114,13 +114,13 @@ rabbitmq-pod-start: hosts-check
 			-v $(CURDIR)/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro,z \
 			-v rabbitmq_data:/var/lib/rabbitmq:z \
 			${PODMAN_IMAGE_NAME}; \
-		echo "Container started. Waiting 5 seconds for initialization..."; \
-		sleep 5; \
+		echo "Container started. Waiting 10 seconds for initialization..."; \
+		sleep 10; \
 	else \
 		echo "Container ${CONTAINER_NAME} already exists. If stopped, try 'make rabbitmq-pod-restart'"; \
 		podman start ${CONTAINER_NAME}; \
-		echo "Waiting 5 seconds for restart..."; \
-		sleep 5; \
+		echo "Waiting 10 seconds for restart..."; \
+		sleep 10; \
 	fi
 
 # Stop RabbitMQ container
