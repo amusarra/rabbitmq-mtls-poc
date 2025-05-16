@@ -115,9 +115,9 @@ rabbitmq-pod-start: hosts-check
 			-e RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER} \
 			-e RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS} \
 			-e RABBITMQ_LOG=${RABBITMQ_LOG} \
-			-v $(CURDIR)/certs:/etc/rabbitmq/certs:ro,z \
-			-v $(CURDIR)/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro,z \
-			-v rabbitmq_data:/var/lib/rabbitmq:z \
+			-v $(CURDIR)/certs:/etc/rabbitmq/certs:ro \
+			-v $(CURDIR)/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro \
+			-v rabbitmq_data:/var/lib/rabbitmq \
 			${PODMAN_IMAGE_NAME}; \
         echo "Container ${CONTAINER_NAME} created and started."; \
 	else \
