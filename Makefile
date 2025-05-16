@@ -124,7 +124,7 @@ rabbitmq-pod-start: hosts-check
         echo "Container ${CONTAINER_NAME} already exists and is running."; \
 	fi
 	@echo "Waiting for RabbitMQ in container ${CONTAINER_NAME} to be ready..."; \
-	sleep 15; \
+	sleep 5; \
     attempts=0; \
     max_attempts=30; \
     ready=false; \
