@@ -21,6 +21,12 @@ This project is a Proof of Concept (PoC) that demonstrates how to configure a Ra
 * Simplify the setup and configuration process through automation.
 * Highlight critical points and best practices in configuring mTLS, SNI, and virtual hosts with RabbitMQ and Proton.
 
+## Demo
+
+See the project setup and execution in action:
+
+![Project Demo GIF](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls.gif)
+
 ## Prerequisites
 
 Refer to the "Prerequisites" section in the [detailed guide](docs/blog/configurare_rabbitmq_41_mtls_guida_pratica_dev.md) (Note: this link points to an Italian document, you might want to translate it or create an English version).
