@@ -33,13 +33,26 @@ jobs:
       # If you can't/don't want to add a print-rabbitmq-fqdn target, hardcode the value here
       # if it's static, e.g.: echo "127.0.0.1 rabbitmq.labs.dontesta.it" | sudo tee -a /etc/hosts
 
-
     - name: Create requirements.txt and Install Python dependencies
       run: |
         make requirements
         pip install -r requirements.txt
 
-    - name: Run full setup (certs, RabbitMQ container, permissions, topology)
+    - name: Generate TLS certificates
+      run: make certs
+
+    - name: Adjust permissions for mounted files
+      run: |
+        echo "Adjusting permissions in $(pwd)/certs and for rabbitmq.conf..."
+        sudo chmod -R a+r $(pwd)/certs
+        # Assicurati che anche il file di configurazione di RabbitMQ sia leggibile, se montato
+        if [ -f "$(pwd)/rabbitmq_config/rabbitmq.conf" ]; then
+          sudo chmod a+r $(pwd)/rabbitmq_config/rabbitmq.conf
+        else
+          echo "Warning: rabbitmq.conf not found at $(pwd)/rabbitmq_config/rabbitmq.conf"
+        fi
+
+    - name: Start RabbitMQ, setup permissions and topology
       env:
         # Export passwords if scripts or Makefile need them and they are not hardcoded
         # These should match those in the Makefile or be managed via secrets if sensitive
@@ -47,7 +60,8 @@ jobs:
         RABBITMQ_ADMIN_PASS: 'SuperS3cureAdminP@ssw0rd!'
         PRODUCER_PASSWORD: 'OrderSenderP@ssw0rd'
         CONSUMER_PASSWORD: 'DeliveryReceiverP@ssw0rd'
-      run: make all
+      # Esegui i target rimanenti che erano parte di 'all'
+      run: make rabbitmq-pod-start rabbitmq-setup-permissions rabbitmq-setup-topology
 
     - name: Check if RabbitMQ container is running
       run: |
