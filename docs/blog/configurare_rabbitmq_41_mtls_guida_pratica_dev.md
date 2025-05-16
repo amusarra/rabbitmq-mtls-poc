@@ -25,6 +25,8 @@ Questo articolo ti guiderà passo dopo passo nella configurazione di RabbitMQ 4.
 
 Con mTLS, sia il server RabbitMQ che i client (producer e consumer) si autenticano reciprocamente utilizzando certificati digitali. Questo rafforza ulteriormente la sicurezza rispetto al TLS standard, dove solo il client verifica il server. Utilizzeremo nomi di dominio completi (FQDN - Fully Qualified Domain Name) e [Subject Alternative Names (SAN)](https://en.wikipedia.org/wiki/Subject_Alternative_Name) per i certificati TLS server e certificati client dedicati, tutti firmati dalla stessa Certificate Authority (CA).
 
+Per chi volesse seguire passo passo e avere a disposizione tutto il codice sorgente, gli script e il Makefile descritti in questa guida, il progetto completo è disponibile su GitHub: <https://github.com/amusarra/rabbitmq-mtls-poc>
+
 ## Perché questa configurazione è importante?
 
 Configurare mTLS fin dall'ambiente di sviluppo ti permette di:
@@ -42,7 +44,7 @@ Prima di iniziare, assicurati di avere installato:
 1. Podman (versione > 5.x): Per la gestione dei container.
 2. OpenSSL (versione >= 3.3): Per la generazione dei certificati TLS.
 3. Python 3 (versione >= 3.12): Per gli script di producer e consumer.
-4. Libreria Python `python-qpid-proton` e `python-dotenv`: `pip install python-qpid-proton python-dotenv`
+4. Librerie Python `python-qpid-proton` e `python-dotenv` che puoi installare con il comando `pip install python-qpid-proton python-dotenv`.
 5. Possibilità di modificare il file `/etc/hosts` per la risoluzione del FQDN locale.
 
 ## Struttura del Progetto
@@ -231,7 +233,7 @@ PRODUCER_SUBJECT = "/C=IT/ST=Sicilia/L=Bronte/O=Dontesta/OU=Client/CN=order_send
 CONSUMER_SUBJECT = "/C=IT/ST=Sicilia/L=Bronte/O=Dontesta/OU=Client/CN=delivery_receiver_client"
 ```
 
-Nel caso volessi generare i certificati per altro FQDN e Subject, basta eseguire il comando make come segue:
+Nel caso in cui tu voglia generare i certificati per un altro FQDN e Subject, sarà sufficiente eseguire il comando make come segue:
 
 ```bash
 make certs \
@@ -256,7 +258,7 @@ make rabbitmq-pod-start rabbitmq-setup-permissions rabbitmq-setup-topology
 
 Questo comando eseguirà il container RabbitMQ con le configurazioni corrette e monterà i certificati generati nella directory `certs` all'interno del container.
 
-> **Nota:** prima di eseguire lo start del container RabbitMQ, viene eseguito il target `hosts-check`, che verifica se il file `/etc/hosts` contiene la voce ${RABBITMQ_FQDN}. Se non è presente, il comando fallirà. Puoi aggiungere manualmente la riga`
+> **Nota:** prima di eseguire lo start del container RabbitMQ, viene eseguito il target `hosts-check`, che verifica se il file `/etc/hosts` contiene la voce ${RABBITMQ_FQDN}. Se non è presente, il comando fallirà. Puoi aggiungere manualmente la riga al file `/etc/hosts`.
 
 A seguire un esempio di output del comando:
 
@@ -264,8 +266,10 @@ A seguire un esempio di output del comando:
 Checking /etc/hosts for entry '127.0.0.1 rabbitmq.labs.dontesta.it'...
 /etc/hosts is OK.
 Starting RabbitMQ container (rabbitmq-dev-server) with image rabbitmq:4.1-management...
-19b1226558b0513fbee5e567174f95edfa324955b1edfc1275721414f9821a08
-Container started. Waiting 20 seconds for initialization...
+fc79be56d11261b0f193c1e8ca08756da6db005a580528da87e76906be77e25a
+Container rabbitmq-dev-server created and started.
+Waiting for RabbitMQ in container rabbitmq-dev-server to be ready...
+RabbitMQ is ready.
 Configuring RabbitMQ vhost, users, and permissions...
 podman exec rabbitmq-dev-server rabbitmqctl add_vhost logistics_vhost || echo "Vhost logistics_vhost already exists."
 Adding vhost "logistics_vhost" ...
@@ -302,6 +306,10 @@ Topology configured.
 
 Se vuoi far tutto in un colpo solo, puoi eseguire il comando `make all`, che eseguirà in sequenza i target `certs`, `rabbitmq-pod-start`, `rabbitmq-setup-permissions` e `rabbitmq-setup-topology`.
 
+Dall'output del comando di avvio puoi notare che il container RabbitMQ è stato avviato correttamente e che sono stati creati gli utenti, i permessi e la topologia necessaria per il corretto funzionamento degli script di esempio. Puoi anche notare che l'immagine RabbitMQ utilizzata è `rabbitmq:4.1-management`, che include l'interfaccia di gestione web e gli strumenti di monitoraggio e che il nome del container è `rabbitmq-dev-server`.
+
+Il nome dell'immagine RabbitMQ è specificato nella variabile `PODMAN_IMAGE_NAME` del Makefile e il nome del container è specificato nella variabile `CONTAINER_NAME`. Puoi modificare questi valori se desideri utilizzare un'immagine diversa o un nome di container diverso.
+
 ### Come vedere i log di RabbitMQ
 
 Puoi visualizzare i log di RabbitMQ in tempo reale con:
@@ -322,7 +330,9 @@ Questo comando ti permetterà di monitorare le attività del broker e diagnostic
 2025-05-16 13:22:50.736862+00:00 [info] <0.931.0> closing AMQP connection (192.168.127.1:59736 -> 10.88.0.39:5671, duration: '40ms')
 ```
 
-### Come fermare RabbitMQ
+Vedendo questo log è possibile notare che il producer `order_sender` si è autenticato correttamente e ha aperto una connessione AMQP 1.0 con RabbitMQ. Puoi anche vedere i dettagli della connessione, come l'hostname e il vhost utilizzato.
+
+### Come fermare e riavviare RabbitMQ
 
 Per fermare il container RabbitMQ, puoi eseguire:
 
@@ -330,7 +340,31 @@ Per fermare il container RabbitMQ, puoi eseguire:
 make rabbitmq-pod-stop
 ```
 
-Questo comando fermerà il container RabbitMQ in esecuzione.
+Questo comando fermerà il container RabbitMQ in esecuzione mostrando un output simile a questo:
+
+```plaintext
+Stopping RabbitMQ container (rabbitmq-dev-server)...
+rabbitmq-dev-server
+```
+
+Per riavviare il container RabbitMQ, puoi eseguire:
+
+```bash
+make rabbitmq-pod-start
+```
+
+Questo comando avvierà nuovamente il container RabbitMQ mostrando un output simile a questo:
+
+```plaintext
+Checking /etc/hosts for entry '127.0.0.1 rabbitmq.labs.dontesta.it'...
+/etc/hosts is OK.
+Starting RabbitMQ container (rabbitmq-dev-server) with image rabbitmq:4.1-management...
+Container rabbitmq-dev-server exists but is not running. Removing it first...
+24212a76d62a279e6d65922028aa12a9156e7f209b12ca81d17d6e9cf5473adc
+Container rabbitmq-dev-server created and started.
+Waiting for RabbitMQ in container rabbitmq-dev-server to be ready...
+RabbitMQ is ready.
+```
 
 ## Esempio di Producer e Consumer in Python
 
@@ -577,7 +611,7 @@ Consumer: Content: {'order_id': 'ORD_MTLS_C22EAF68', 'item_id': 'ITEM_E_438', 'd
 Consumer: Order processed.
 Consumer: Message confirmed (accepted).
 --------------------
-Consumer: AMQP connection error (mTLS?): Condition('amqp:internal-error', 'Connection forced: "broker forced connection closure with reason \'shutdown\'"')
+Consumer: Reception interrupted by user.
 Consumer: Container execution finished.
 ```
 
