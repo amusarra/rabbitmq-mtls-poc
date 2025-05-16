@@ -102,7 +102,12 @@ client-certs: $(CA_CERT) $(CA_KEY) # Depends on the CA
 # Start RabbitMQ container
 rabbitmq-pod-start: hosts-check
 	@echo "Starting RabbitMQ container (${CONTAINER_NAME}) with image ${PODMAN_IMAGE_NAME}..."
-	@if ! podman container exists $(CONTAINER_NAME); then \
+	@if ! podman container exists $(CONTAINER_NAME) || ! podman container inspect $(CONTAINER_NAME) --format "{{.State.Running}}" | grep -q "true"; then \
+        if podman container exists $(CONTAINER_NAME); then \
+            echo "Container ${CONTAINER_NAME} exists but is not running. Removing it first..."; \
+            podman stop ${CONTAINER_NAME} > /dev/null 2>&1 || true; \
+            podman rm ${CONTAINER_NAME} > /dev/null 2>&1 || true; \
+        fi; \
 		podman run -d --name ${CONTAINER_NAME} \
 			--hostname ${RABBITMQ_FQDN} \
 			-p 5671:5671 \
@@ -114,14 +119,30 @@ rabbitmq-pod-start: hosts-check
 			-v $(CURDIR)/rabbitmq_config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro,z \
 			-v rabbitmq_data:/var/lib/rabbitmq:z \
 			${PODMAN_IMAGE_NAME}; \
-		echo "Container started. Waiting 10 seconds for initialization..."; \
-		sleep 10; \
+        echo "Container ${CONTAINER_NAME} created and started."; \
 	else \
-		echo "Container ${CONTAINER_NAME} already exists. If stopped, try 'make rabbitmq-pod-restart'"; \
-		podman start ${CONTAINER_NAME}; \
-		echo "Waiting 10 seconds for restart..."; \
-		sleep 10; \
+        echo "Container ${CONTAINER_NAME} already exists and is running."; \
 	fi
+	@echo "Waiting for RabbitMQ in container ${CONTAINER_NAME} to be ready..."; \
+	sleep 5; \
+    attempts=0; \
+    max_attempts=30; \
+    ready=false; \
+    until $$ready || [ $$attempts -eq $$max_attempts ]; do \
+        if podman exec ${CONTAINER_NAME} rabbitmqctl status > /dev/null 2>&1; then \
+            echo "RabbitMQ is ready."; \
+            ready=true; \
+        else \
+            echo "Waiting for RabbitMQ... attempt $$(($$attempts + 1))/$$max_attempts"; \
+            sleep 3; \
+            attempts=$$((attempts+1)); \
+        fi; \
+    done; \
+    if ! $$ready; then \
+        echo "RabbitMQ in container ${CONTAINER_NAME} did not become ready in time."; \
+        podman logs ${CONTAINER_NAME}; \
+        exit 1; \
+    fi
 
 # Stop RabbitMQ container
 rabbitmq-pod-stop:
