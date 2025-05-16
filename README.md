@@ -1,5 +1,11 @@
 # RabbitMQ 4.1 mTLS and AMQP 1.0 - Proof of Concept
 
+[![Antonio Musarra's Blog](https://img.shields.io/badge/maintainer-Antonio_Musarra's_Blog-purple.svg?colorB=6e60cc)](https://www.dontesta.it)
+[![Keep a Changelog v1.1.0 badge](https://img.shields.io/badge/changelog-Keep%20a%20Changelog%20v1.1.0-%23E05735)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![CI Build and Test](https://github.com/amusarra/rabbitmq-mtls-poc/actions/workflows/ci.yml/badge.svg)](https://github.com/amusarra/rabbitmq-mtls-poc/actions/workflows/ci.yml)
+
 This project is a Proof of Concept (PoC) that demonstrates how to configure a RabbitMQ 4.1 (or later) environment to use mutual TLS authentication (mTLS) and the AMQP 1.0 protocol. The goal is to provide a practical guide and a development scenario that closely mirrors secure production configurations.
 
 ## Main Features
@@ -25,7 +31,7 @@ This project is a Proof of Concept (PoC) that demonstrates how to configure a Ra
 
 See the project setup and execution in action:
 
-![Project Demo GIF](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls.gif)
+[Watch a demo of the project in action](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls.gif)
 
 ## Prerequisites
 
@@ -36,7 +42,7 @@ Refer to the "Prerequisites" section in the [detailed guide](docs/blog/configura
 1. **Clone the repository:**
 
     ```bash
-    git clone <YOUR_REPOSITORY_URL>
+    git clone https://github.com/amusarra/rabbitmq-mtls-poc.git
     cd rabbitmq-mtls-poc
     ```
 
