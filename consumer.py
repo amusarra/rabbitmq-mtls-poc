@@ -143,8 +143,7 @@ def receive_order_messages_proton():
         print("\nConsumer: Reception interrupted by user.")
         # The on_disconnected handler should be called, which will stop the container.
         # If not, ensure the container is stopped.
-        if not container.stopped:
-             container.stop()
+        container.stop() # Simply call stop()
     except Exception as e:
         print(f"Consumer: Critical error: {e}")
         import traceback
