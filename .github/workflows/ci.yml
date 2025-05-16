@@ -1,0 +1,106 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12' # Ensure this matches the version required by the project
+
+    - name: Install Podman
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y podman
+
+    - name: Add RabbitMQ FQDN to /etc/hosts
+      # The Makefile has a hosts-check target that would fail without this.
+      # RABBITMQ_FQDN is defined in the Makefile (e.g., rabbitmq.labs.dontesta.it)
+      run: |
+        RABBITMQ_FQDN_FROM_MAKEFILE=$(make -s -f Makefile print-rabbitmq-fqdn) # Add a target to print the variable
+        echo "127.0.0.1 $RABBITMQ_FQDN_FROM_MAKEFILE" | sudo tee -a /etc/hosts
+      # If you can't/don't want to add a print-rabbitmq-fqdn target, hardcode the value here
+      # if it's static, e.g.: echo "127.0.0.1 rabbitmq.labs.dontesta.it" | sudo tee -a /etc/hosts
+
+
+    - name: Create requirements.txt and Install Python dependencies
+      run: |
+        make requirements
+        pip install -r requirements.txt
+
+    - name: Run full setup (certs, RabbitMQ container, permissions, topology)
+      env:
+        # Export passwords if scripts or Makefile need them and they are not hardcoded
+        # These should match those in the Makefile or be managed via secrets if sensitive
+        RABBITMQ_DEFAULT_PASS: "rabbitmq"
+        RABBITMQ_ADMIN_PASS: 'SuperS3cureAdminP@ssw0rd!'
+        PRODUCER_PASSWORD: 'OrderSenderP@ssw0rd'
+        CONSUMER_PASSWORD: 'DeliveryReceiverP@ssw0rd'
+      run: make all
+
+    - name: Check if RabbitMQ container is running
+      run: |
+        CONTAINER_NAME_FROM_MAKEFILE=$(make -s -f Makefile print-container-name) # Add a target to print the variable
+        if podman ps -a --format "{{.Names}}" | grep -q "^${CONTAINER_NAME_FROM_MAKEFILE}$"; then
+          echo "RabbitMQ container ($CONTAINER_NAME_FROM_MAKEFILE) is present."
+          if podman container inspect $CONTAINER_NAME_FROM_MAKEFILE --format "{{.State.Running}}" | grep -q "true"; then
+            echo "RabbitMQ container ($CONTAINER_NAME_FROM_MAKEFILE) is running."
+          else
+            echo "Error: RabbitMQ container ($CONTAINER_NAME_FROM_MAKEFILE) is not running."
+            podman logs $CONTAINER_NAME_FROM_MAKEFILE || echo "Could not get logs for $CONTAINER_NAME_FROM_MAKEFILE"
+            exit 1
+          fi
+        else
+          echo "Error: RabbitMQ container ($CONTAINER_NAME_FROM_MAKEFILE) was not found."
+          exit 1
+        fi
+      # If you can't/don't want to add a print-container-name target, hardcode the value here
+      # e.g.: if podman ps -a --format "{{.Names}}" | grep -q "^rabbitmq-dev-server$"; then ...
+
+    - name: Basic Producer Test (send 1 message)
+      env:
+        NUM_ORDERS_TO_SEND: 1
+        PRODUCER_PASSWORD: 'OrderSenderP@ssw0rd' # Ensure this matches Makefile/script defaults
+      run: make producer
+
+    - name: Basic Consumer Test (check connection and receive)
+      env:
+        CONSUMER_PASSWORD: 'DeliveryReceiverP@ssw0rd' # Ensure this matches
+      run: |
+        echo "Starting consumer in background..."
+        make consumer > consumer_output.log 2>&1 &
+        CONSUMER_PID=$!
+        # Give the producer time to send and the consumer time to receive
+        sleep 15 # Increase if necessary
+
+        echo "Stopping consumer..."
+        kill $CONSUMER_PID
+        # Wait for the consumer process to terminate, ignore error if already terminated
+        wait $CONSUMER_PID || true
+
+        echo "Consumer Output:"
+        cat consumer_output.log
+
+        # Check if the consumer received messages (this is a basic test)
+        # You should adapt the check based on the actual output of your consumer.py
+        if grep -q "New message received!" consumer_output.log; then
+          echo "Consumer test passed: Message received."
+        else
+          echo "Consumer test failed: No message received indication in logs."
+          exit 1
+        fi
+
+    - name: Clean up
+      if: always() # Ensures cleanup runs even if previous steps fail
+      run: make clean
