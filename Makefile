@@ -198,7 +198,7 @@ producer:
 # Run consumer script
 consumer:
 	@echo "Running Consumer Python script..."
-	@export CONSUMER_PASSWORD=${CONSUMER_PASSWORD}; python consumer.py
+	@export CONSUMER_PASSWORD=${CONSUMER_PASSWORD}; python -u consumer.py
 
 # Clean up
 clean: rabbitmq-pod-rm
