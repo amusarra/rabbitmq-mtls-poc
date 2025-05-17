@@ -1,5 +1,5 @@
 ---
-title: "Configurare RabbitMQ 4.1 mTLS e AMQP 1.0: Guida Pratica per Sviluppatori"
+title: "RabbitMQ 4.1 mTLS e AMQP 1.0: Guida essenziale per sviluppatori"
 description: "Scopri come configurare RabbitMQ 4.1 con mTLS e AMQP 1.0 in questa guida pratica per sviluppatori. Segui i passaggi dettagliati per garantire una comunicazione sicura tra i tuoi servizi."
 date: 2025-05-10
 tags:
@@ -13,7 +13,8 @@ categories:
   - Sicurezza
   - Sviluppo
   - AMQP
-slug: rabbitmq-4-1-mtls-amqp-1-0-guida-pratica
+slug: rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori
+permalink: https://www.dontesta.it/2025/05/10/rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori/
 status: draft
 ---
 
@@ -170,6 +171,10 @@ graph LR
     E --> F[rabbitmq-setup-topology: Crea Exchange, Queue, Binding];
     F --> G[Ambiente Pronto];
 ```
+
+Per avere un'idea visiva dell'intero processo di setup orchestrato dal Makefile, puoi guardare questa breve demo:
+
+[![Anteprima Demo Makefile Setup](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls_1.jpg)](https://www.dontesta.it/wp-content/uploads/2020/11/registrazione_demo_setup_env_rabbitmq_41_mtls_1.gif)
 
 #### Come scoprire tutti i target disponibili
 
