@@ -19,7 +19,7 @@ status: draft
 
 ## Configurare RabbitMQ 4.1 mTLS e AMQP 1.0: Guida Pratica per Sviluppatori
 
-Nello sviluppo software moderno, specialmente in architetture a microservizi o event-driven, i message broker come [RabbitMQ](https://www.rabbitmq.com/) giocano un ruolo cruciale. Garantire che la comunicazione con il broker sia sicura e che l'ambiente di sviluppo rispecchi fedelmente quello di produzione è fondamentale.
+Nello sviluppo software moderno, in particolare con architetture a microservizi o event-driven, i message broker come [RabbitMQ](https://www.rabbitmq.com/) rivestono un ruolo fondamentale. Garantire una comunicazione sicura con il broker e un ambiente di sviluppo quanto più simile possibile a quello di produzione è fondamentale per ridurre problemi in fase di deployment.
 
 Questo articolo ti guiderà passo dopo passo nella configurazione di RabbitMQ 4.1 con Mutual TLS (mTLS) per comunicazioni sicure bidirezionali e con il supporto al protocollo [AMQP 1.0](https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html), il tutto gestito tramite Podman. Implementeremo un esempio pratico in Python utilizzando la libreria [Qpid Proton](https://qpid.apache.org/proton/index.html).
 
@@ -41,11 +41,14 @@ Configurare mTLS fin dall'ambiente di sviluppo ti permette di:
 
 Prima di iniziare, assicurati di avere installato:
 
-1. Podman (versione > 5.x): Per la gestione dei container.
-2. OpenSSL (versione >= 3.3): Per la generazione dei certificati TLS.
-3. Python 3 (versione >= 3.12): Per gli script di producer e consumer.
-4. Librerie Python `python-qpid-proton` e `python-dotenv` che puoi installare con il comando `pip install python-qpid-proton python-dotenv`.
-5. Possibilità di modificare il file `/etc/hosts` per la risoluzione del FQDN locale.
+1. Make (versione >= 3.8): Per la gestione del progetto e l'automazione delle operazioni.
+2. Podman (versione > 5.x): Per la gestione dei container.
+3. OpenSSL (versione >= 3.3): Per la generazione dei certificati TLS.
+4. Python 3 (versione >= 3.12): Per gli script di producer e consumer.
+5. Librerie Python `python-qpid-proton` e `python-dotenv` che puoi installare con il comando `pip install python-qpid-proton python-dotenv`.
+6. Possibilità di modificare il file `/etc/hosts` per la risoluzione del FQDN locale.
+
+> **Nota:** Il progetto collegato a questo articolo è stato realizzato e testato su un sistema macOS 15.4.1 24E263 arm64, ma dovrebbe funzionare anche su altre distribuzioni Linux. Se hai bisogno di aiuto per l'installazione di Podman o OpenSSL, puoi consultare la documentazione ufficiale o chiedere supporto. La GitHub Action inclusa nel repository è stata testata su Ubuntu 22.04 e dovrebbe funzionare senza problemi.
 
 ## Struttura del Progetto
 
@@ -73,7 +76,7 @@ rabbitmq-mtls-poc/
 
 ## Configurazione di RabbitMQ per mTLS
 
-Per abilitare la mutua autenticazione TLS (mTLS) in RabbitMQ, è necessario configurare il broker affinché accetti solo connessioni cifrate e richieda la presentazione di un certificato valido anche da parte dei client. Questo garantisce che solo i client autorizzati e dotati di certificato firmato dalla CA possano interagire con RabbitMQ.
+Per abilitare la [mutua autenticazione TLS (mTLS) in RabbitMQ](https://www.rabbitmq.com/docs/ssl), è necessario configurare il broker affinché accetti solo connessioni cifrate e richieda la presentazione di un certificato valido anche da parte dei client. Questo garantisce che solo i client autorizzati e dotati di certificato firmato dalla CA possano interagire con RabbitMQ.
 
 ### Parametri chiave nel file di configurazione
 
@@ -109,7 +112,7 @@ Non è necessario modificare il file di configurazione di RabbitMQ per l'uso di 
 
 ## Cosa fa il Makefile e come usarlo
 
-Il Makefile è un strumento molto potente che in questo progetto viene utilizzato per automatizzare la generazione dei certificati e la gestione del container RabbitMQ. Grazie a questo file, puoi facilmente creare un ambiente di sviluppo sicuro senza dover eseguire manualmente ogni singolo comando.
+Il [Makefile](https://www.gnu.org/software/make/manual/make.html) è un strumento molto potente che in questo progetto viene utilizzato per automatizzare la generazione dei certificati e la gestione del container RabbitMQ. Grazie a questo file, puoi facilmente creare un ambiente di sviluppo sicuro senza dover eseguire manualmente ogni singolo comando.
 
 Il Makefile è pensato per essere idempotente e facilmente estendibile. Le principali operazioni automatizzate sono:
 
@@ -142,7 +145,7 @@ Il Makefile del progetto è stato pensato per semplificare tutte le operazioni r
   Ferma e rimuove il container RabbitMQ avviato in precedenza.
 
 - **rabbitmq-setup-permissions**  
-  Configura utenti, permessi e vhost all’interno di RabbitMQ tramite comandi `rabbitmqctl` o API HTTP.  
+  Configura utenti, permessi e vhost all’interno di RabbitMQ tramite comandi `rabbitmqctl`.  
   Garantisce che i client possano autenticarsi e accedere alle risorse corrette.
 
 - **rabbitmq-setup-topology**  
@@ -491,6 +494,31 @@ export PN_TRACE_FRM=1
 ```
 
 In questo modo, potrai ottenere informazioni dettagliate su cosa sta accadendo durante la connessione e l'invio/ricezione dei messaggi. Questo è particolarmente utile per il debug e per comprendere meglio il funzionamento interno di Proton e RabbitMQ.
+
+A seguire un esempio di output del trace:
+
+```plaintext
+[0x11af7a710]: SASL:FRAME:  -> SASL
+[0x11af7a710]: SASL:FRAME:  <- SASL
+[0x11af7a710]: AMQP:FRAME:0 <- @sasl-mechanisms(64) [sasl-server-mechanisms=@<symbol>[:PLAIN, :AMQPLAIN, :ANONYMOUS]]
+[0x11af7a710]: AMQP:FRAME:0 -> @sasl-init(65) [mechanism=:PLAIN, initial-response=b"\x00order_sender\x00OrderSenderP@ssw0rd"]
+[0x11af7a710]: AMQP:FRAME:0 <- @sasl-outcome(68) [code=0x0]
+[0x11af7a710]: AMQP:FRAME:  -> AMQP
+[0x11af7a710]: AMQP:FRAME:0 -> @open(16) [container-id="c71222a8-93a9-498c-afac-2956a7b18892", hostname="vhost:logistics_vhost", max-frame-size=0x8000, channel-max=0x7fff]
+[0x11af7a710]: AMQP:FRAME:0 -> @begin(17) [next-outgoing-id=0x0, incoming-window=0x7fffffff, outgoing-window=0x7fffffff, handle-max=0x7fffffff]
+[0x11af7a710]: AMQP:FRAME:0 -> @attach(18) [name="c71222a8-93a9-498c-afac-2956a7b18892-/exchanges/order_exchange/new_order_event", handle=0x0, role=false, snd-settle-mode=0x2, rcv-settle-mode=0x0, source=@source(40) [durable=0x0, timeout=0x0, dynamic=false], target=@target(41) [address="/exchanges/order_exchange/new_order_event", durable=0x0, timeout=0x0, dynamic=false], initial-delivery-count=0x0, max-message-size=0x0]
+[0x11af7a710]: AMQP:FRAME:  <- AMQP
+[0x11af7a710]: AMQP:FRAME:0 <- @open(16) [container-id="rabbit@rabbitmq", max-frame-size=0x20000, channel-max=0x3f, idle-time-out=0x7530, offered-capabilities=@<symbol>[:"LINK_PAIR_V1_0", :ANONYMOUS-RELAY], properties={:node="rabbit@rabbitmq", :"cluster_name"="rabbit@rabbitmq", :copyright="Copyright (c) 2007-2025 Broadcom Inc and/or its subsidiaries", :information="Licensed under the MPL 2.0. Website: https://rabbitmq.com", :platform="Erlang/OTP 27.3.4", :product="RabbitMQ", :version="4.1.0"}]
+[0x11af7a710]: AMQP:FRAME:0 <- @begin(17) [remote-channel=0x0, next-outgoing-id=0xfffffffc, incoming-window=0x190, outgoing-window=0xffffffff, handle-max=0xff]
+[0x11af7a710]: AMQP:FRAME:0 <- @attach(18) [name="c71222a8-93a9-498c-afac-2956a7b18892-/exchanges/order_exchange/new_order_event", handle=0x0, role=true, snd-settle-mode=0x2, rcv-settle-mode=0x0, source=@source(40) [durable=0x0, timeout=0x0, dynamic=false], target=@target(41) [address="/exchanges/order_exchange/new_order_event", durable=0x0, timeout=0x0, dynamic=false], max-message-size=0x1000000]
+[0x11af7a710]: AMQP:FRAME:0 <- @flow(19) [next-incoming-id=0x0, incoming-window=0x190, next-outgoing-id=0xfffffffc, outgoing-window=0xffffffff, handle=0x0, delivery-count=0x0, link-credit=0xaa]
+[0x11af7a710]: AMQP:FRAME:0 -> @transfer(20) [handle=0x0, delivery-id=0x0, delivery-tag=b"1", message-format=0x0] (147) \x00SpE\x00Ss\xc0\x19\x07@@@@@@\xa3\x10application/json\x00Sw\xa1l{\x22order_id\x22: \x22ORD_MTLS_3CF4CF72\x22, \x22item_id\x22: \x22ITEM_B_167\x22, \x22description\x22: \x22Brilliant Gadget\x22, \x22quantity\x22: 3}
+[0x11af7a710]: AMQP:FRAME:0 <- @disposition(21) [role=true, first=0x0, last=0x4, settled=true, state=@accepted(36) []]
+[0x11af7a710]: AMQP:FRAME:0 -> @close(24) []
+[0x11af7a710]: AMQP:FRAME:0 <- @close(24) []
+[0x11af7a710]:   IO:FRAME:  <- EOS
+[0x11af7a710]:   IO:FRAME:  -> EOS
+```
 
 Nel caso fosse necessario, puoi sempre consultare la [documentazione ufficiale di RabbitMQ](https://www.rabbitmq.com/) e [Qpid Proton](https://qpid.apache.org/proton/index.html) per ulteriori dettagli e best practices.
 
