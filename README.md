@@ -31,7 +31,7 @@ This project is a Proof of Concept (PoC) that demonstrates how to configure a Ra
 
 See the project setup and execution in action:
 
-[Watch a demo of the project in action](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls.gif)
+[Watch a demo of the project in action](https://www.dontesta.it/wp-content/uploads/2020/11/registrazione_demo_setup_env_rabbitmq_41_mtls_1.gif)
 
 ## Prerequisites
 
