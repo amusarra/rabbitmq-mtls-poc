@@ -1,6 +1,7 @@
 ---
 title: "RabbitMQ 4.1 mTLS e AMQP 1.0: Guida essenziale per sviluppatori"
 description: "Scopri come configurare RabbitMQ 4.1 con mTLS e AMQP 1.0 in questa guida pratica per sviluppatori. Segui i passaggi dettagliati per garantire una comunicazione sicura tra i tuoi servizi."
+author: "Antonio Musarra"
 date: 2025-05-10
 tags:
   - RabbitMQ
@@ -14,8 +15,9 @@ categories:
   - Sviluppo
   - AMQP
 slug: rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori
-permalink: https://www.dontesta.it/2025/05/10/rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori/
-status: draft
+permalink: https://www.dontesta.it/2025/05/18/rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori/
+status: published
+publishdate: 2025-05-18
 ---
 
 ## Configurare RabbitMQ 4.1 mTLS e AMQP 1.0: Guida Pratica per Sviluppatori
@@ -23,6 +25,8 @@ status: draft
 Nello sviluppo software moderno, in particolare con architetture a microservizi o event-driven, i message broker come [RabbitMQ](https://www.rabbitmq.com/) rivestono un ruolo fondamentale. Garantire una comunicazione sicura con il broker e un ambiente di sviluppo quanto più simile possibile a quello di produzione è fondamentale per ridurre problemi in fase di deployment.
 
 Questo articolo ti guiderà passo dopo passo nella configurazione di RabbitMQ 4.1 con Mutual TLS (mTLS) per comunicazioni sicure bidirezionali e con il supporto al protocollo [AMQP 1.0](https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-overview-v1.0-os.html), il tutto gestito tramite Podman. Implementeremo un esempio pratico in Python utilizzando la libreria [Qpid Proton](https://qpid.apache.org/proton/index.html).
+
+🎧 **Preferisci ascoltare?** Questo articolo è accompagnato da un episodio podcast dedicato che approfondisce gli stessi argomenti. Ascoltalo qui: [RabbitMQ 4.1 mTLS e AMQP 1.0 - Approfondimento Podcast](https://spotifycreators-web.app.link/e/wfx728cUsTb)
 
 Con mTLS, sia il server RabbitMQ che i client (producer e consumer) si autenticano reciprocamente utilizzando certificati digitali. Questo rafforza ulteriormente la sicurezza rispetto al TLS standard, dove solo il client verifica il server. Utilizzeremo nomi di dominio completi (FQDN - Fully Qualified Domain Name) e [Subject Alternative Names (SAN)](https://en.wikipedia.org/wiki/Subject_Alternative_Name) per i certificati TLS server e certificati client dedicati, tutti firmati dalla stessa Certificate Authority (CA).
 
