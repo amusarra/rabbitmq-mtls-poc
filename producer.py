@@ -1,3 +1,22 @@
+"""
+AMQP 1.0 mTLS Producer for RabbitMQ.
+
+This script connects to a RabbitMQ broker using AMQP 1.0 over mTLS,
+authenticates with a client certificate, and sends a configurable number
+of randomly generated order messages to a specified target (exchange/routing key).
+It uses the python-qpid-proton library for AMQP 1.0 communication.
+
+Environment variables are used for configuration, with defaults provided.
+- RABBITMQ_HOST: The hostname or IP address of the RabbitMQ broker.
+- RABBITMQ_PORT: The port number for AMQP 1.0 with TLS (default 5671).
+- VHOST: The virtual host to connect to, in Proton format (e.g., "vhost:my_vhost").
+- PRODUCER_USER: The username for authentication.
+- PRODUCER_PASSWORD: The password for authentication.
+- TARGET_NODE: The AMQP target address (e.g., "/exchanges/my_exchange/routing_key").
+- NUM_ORDERS_TO_SEND: Number of random orders to generate and send.
+- Certificate paths (CA_CERT_PATH, PRODUCER_CLIENT_CERT_PATH, PRODUCER_CLIENT_KEY_PATH)
+  are derived relative to this script's location, assuming a 'certs/' subdirectory.
+"""
 import json
 import os
 import random
@@ -42,7 +61,21 @@ MAX_QUANTITY = 10
 # --- End of order generation configuration ---
 
 class OrderProducer(MessagingHandler):
+    """
+    A Qpid Proton MessagingHandler for producing order messages to RabbitMQ.
+
+    This class handles AMQP 1.0 events to establish an mTLS connection,
+    create a sender link, send messages, and manage message confirmations and errors.
+    """
     def __init__(self, server_url, target_address, orders_to_send):
+        """
+        Initializes the OrderProducer.
+
+        Args:
+            server_url (str): The AMQP connection URL (e.g., "amqps://host:port/").
+            target_address (str): The AMQP target node address (e.g., "/exchanges/my_exchange/routing_key").
+            orders_to_send (list): A list of order dictionaries to send.
+        """
         super(OrderProducer, self).__init__()
         self.server_url = server_url
         self.target_address = target_address
@@ -53,6 +86,16 @@ class OrderProducer(MessagingHandler):
         self.total_messages = len(orders_to_send)
 
     def on_start(self, event):
+        """
+        Called when the Qpid Proton reactor starts.
+
+        Configures SSL/TLS for mTLS, establishes a connection to the broker,
+        and creates a sender link to the specified target address.
+        Stops the container on SSL configuration or connection failure.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         print(f"Producer: Starting, connecting to {self.server_url}, target: {self.target_address}")
 
         ssl_domain = SSLDomain(SSLDomain.MODE_CLIENT)
@@ -96,6 +139,15 @@ class OrderProducer(MessagingHandler):
             event.container.stop()
 
     def on_sendable(self, event):
+        """
+        Called when the sender link has credit and can send messages.
+
+        Sends messages from the `orders_to_send` list until all are sent
+        or the sender runs out of credit.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         if self.sender and self.sender.credit and self.sent_count < self.total_messages:
             order_data = self.orders_to_send[self.sent_count]
             message_body = json.dumps(order_data)
@@ -107,6 +159,15 @@ class OrderProducer(MessagingHandler):
             self.sent_count += 1
 
     def on_accepted(self, event):
+        """
+        Called when a sent message is accepted by the broker.
+
+        Increments the confirmed message count. If all messages are confirmed,
+        closes the connection.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         self.confirmed_count += 1
         print(f"Producer: Message accepted by broker. Confirmed: {self.confirmed_count}/{self.total_messages}")
         if self.confirmed_count == self.total_messages:
@@ -115,16 +176,41 @@ class OrderProducer(MessagingHandler):
             # The container stops on its own after closing the connection
 
     def on_rejected(self, event):
+        """
+        Called when a sent message is rejected by the broker.
+
+        Logs the rejection and closes the connection.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         print(f"Producer: Message rejected: {event.delivery.remote_state if event.delivery else 'N/A'}")
         if event.connection: event.connection.close()
-        # event.container.stop()
+        # event.container.stop() # Container stops when connection closes
 
     def on_released(self, event):
+        """
+        Called when a sent message is released by the broker.
+
+        Logs the release and closes the connection.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         print(f"Producer: Message released: {event.delivery.remote_state if event.delivery else 'N/A'}")
         if event.connection: event.connection.close()
-        # event.container.stop()
+        # event.container.stop() # Container stops when connection closes
 
     def on_disconnected(self, event):
+        """
+        Called when the connection to the broker is disconnected.
+
+        Logs a warning if not all sent messages were confirmed.
+        The container usually stops automatically when the connection is closed.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         print(f"Producer: Disconnected from {self.server_url}")
         if self.confirmed_count < self.sent_count:
              print(f"Producer: WARNING - Disconnected before confirmation. Sent: {self.sent_count}, Confirmed: {self.confirmed_count}")
@@ -133,18 +219,42 @@ class OrderProducer(MessagingHandler):
         # The container will stop when there are no more active handles or explicit calls.
 
     def on_transport_error(self, event):
+        """
+        Called when a transport-level error occurs (e.g., SSL/TLS handshake failure).
+
+        Logs the error and stops the Qpid Proton container.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         condition = event.transport.condition
         print(f"Producer: Transport error (mTLS?): {condition if condition else 'N/A'}")
         if event.connection: event.connection.close()
         event.container.stop() # Stop the container in case of a transport error
 
     def on_connection_error(self, event):
+        """
+        Called when an AMQP connection-level error occurs.
+
+        Logs the error and stops the Qpid Proton container.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         condition = event.connection.remote_condition if event.connection else None
         print(f"Producer: AMQP connection error (mTLS?): {condition if condition else 'N/A'}")
         if event.connection: event.connection.close()
         event.container.stop() # Stop the container in case of an AMQP connection error
 
     def on_link_error(self, event):
+        """
+        Called when an AMQP link-level error occurs (e.g., sender link failure).
+
+        Logs the error and stops the Qpid Proton container.
+
+        Args:
+            event: The Qpid Proton event object.
+        """
         condition = None
         if event.sender and event.sender.remote_condition:
             condition = event.sender.remote_condition
@@ -153,6 +263,15 @@ class OrderProducer(MessagingHandler):
         event.container.stop() # Stop the container in case of a link error
 
 def generate_random_orders(num_orders):
+    """
+    Generates a list of random order dictionaries.
+
+    Args:
+        num_orders (int): The number of orders to generate.
+
+    Returns:
+        list: A list of order dictionaries.
+    """
     orders = []
     for i in range(num_orders):
         item_template = random.choice(POSSIBLE_ITEMS)
@@ -166,6 +285,15 @@ def generate_random_orders(num_orders):
     return orders
 
 def send_order_messages_proton(orders):
+    """
+    Sets up and runs the Qpid Proton container for the OrderProducer.
+
+    Initializes the OrderProducer handler with the provided orders
+    and starts the Proton reactor to send them.
+
+    Args:
+        orders (list): A list of order dictionaries to send.
+    """
     if not orders:
         print("Producer: No orders to send.")
         return
@@ -181,6 +309,10 @@ def send_order_messages_proton(orders):
         traceback.print_exc()
 
 if __name__ == "__main__":
+    """
+    Main execution block.
+    Generates random orders and then sends them using the AMQP 1.0 producer.
+    """
     print(f"Producer: Generating {NUM_ORDERS_TO_SEND} random orders...")
     orders_to_send = generate_random_orders(NUM_ORDERS_TO_SEND)
     # print(f"Producer: Orders generated: {orders_to_send}") # Uncomment for debugging
