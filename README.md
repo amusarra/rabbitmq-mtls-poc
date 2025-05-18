@@ -31,7 +31,7 @@ This project is a Proof of Concept (PoC) that demonstrates how to configure a Ra
 
 See the project setup and execution in action:
 
-[![Watch a demo of the project in action](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls_1.jpg)](https://www.dontesta.it/wp-content/uploads/2020/11/registrazione_demo_setup_env_rabbitmq_41_mtls_1.gif)
+[![Watch a demo of the project in action](https://www.dontesta.it/wp-content/uploads/2025/05/registrazione_demo_setup_env_rabbitmq_41_mtls_1.jpg)](https://bit.ly/4dnJEve)
 
 ## Prerequisites
 
@@ -79,11 +79,11 @@ Refer to the "Prerequisites" section in the [detailed guide](docs/blog/configura
         ```
 
 7. **Consult the documentation** for more details on configuration and concepts:
-    * [Configuring RabbitMQ 4.1 mTLS and AMQP 1.0: A Practical Guide for Developers](https://www.dontesta.it/2025/05/18/rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori/) (Note: this link points to an Italian article)
+    * [Configuring RabbitMQ 4.1 mTLS and AMQP 1.0: A Practical Guide for Developers](https://bit.ly/4ksEsbX) (Note: this link points to an Italian article)
 
 ## Project Structure
 
-Refer to the "Project Structure" section in the [detailed guide](https://www.dontesta.it/2025/05/18/rabbitmq-4-1-mtls-e-amqp-1-0-guida-essenziale-per-sviluppatori/) (Note: this link points to an Italian article).
+Refer to the "Project Structure" section in the [detailed guide](https://bit.ly/4ksEsbX) (Note: this link points to an Italian article).
 
 ## Useful Makefile Commands
 
