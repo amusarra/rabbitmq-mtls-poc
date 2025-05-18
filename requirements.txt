@@ -1,2 +1,0 @@
-python-qpid-proton
-python-dotenv
