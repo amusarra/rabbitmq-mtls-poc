@@ -1,7 +1,7 @@
 .PHONY: all certs server-certs client-certs rabbitmq-pod-start rabbitmq-pod-stop rabbitmq-pod-rm rabbitmq-setup-permissions rabbitmq-setup-topology rabbitmq-logs producer consumer clean hosts-check requirements help print-rabbitmq-fqdn print-container-name
 
 # Variables
-PODMAN_IMAGE_NAME = rabbitmq:4.1-management
+PODMAN_IMAGE_NAME = docker.io/library/rabbitmq:4.1-management
 CONTAINER_NAME = rabbitmq-dev-server
 RABBITMQ_FQDN = rabbitmq.labs.dontesta.it
 VHOST_NAME = logistics_vhost
@@ -43,8 +43,11 @@ CONSUMER_SUBJECT = "/C=IT/ST=Sicilia/L=Bronte/O=Dontesta/OU=Client/CN=delivery_r
 YELLOW = \033[1;33m
 NC = \033[0m # No Color
 
+# Variabile per determinare il tipo di OS
+OS_TYPE := $(shell uname -s)
+
 # Default target
-all: certs rabbitmq-pod-start rabbitmq-setup-permissions rabbitmq-setup-topology
+all: certs adjust-linux-permissions rabbitmq-pod-start rabbitmq-setup-permissions rabbitmq-setup-topology
 
 # Check /etc/hosts
 hosts-check:
@@ -99,8 +102,31 @@ client-certs: $(CA_CERT) $(CA_KEY) # Depends on the CA
 	@echo "Consumer client certificate generated: $(CONSUMER_CERT)"
 	@echo "Client certificates generated."
 
+# Questo target viene eseguito dopo la generazione dei certificati
+# e prima dell'avvio del container e serve per regolare i permessi
+# su Linux, dove i permessi devono essere impostati correttamente
+# per i file di certificati e configurazione di RabbitMQ.
+adjust-linux-permissions:
+ifeq ($(OS_TYPE),Linux)
+	@echo "Adjusting permissions for Linux in $(CURDIR)/certs and for rabbitmq.conf..."
+	@if [ -d "$(CURDIR)/certs" ]; then \
+        sudo chmod -R a+r $(CURDIR)/certs; \
+        echo "Permissions adjusted for $(CURDIR)/certs"; \
+	else \
+        echo "Warning: Directory $(CURDIR)/certs not found. Skipping chmod."; \
+	fi
+	@if [ -f "$(CURDIR)/rabbitmq_config/rabbitmq.conf" ]; then \
+        sudo chmod a+r $(CURDIR)/rabbitmq_config/rabbitmq.conf; \
+        echo "Permissions adjusted for $(CURDIR)/rabbitmq_config/rabbitmq.conf"; \
+	else \
+        echo "Warning: rabbitmq.conf not found at $(CURDIR)/rabbitmq_config/rabbitmq.conf. Skipping chmod."; \
+	fi
+else
+	@echo "Skipping Linux-specific permission adjustments on $(OS_TYPE)."
+endif
+
 # Start RabbitMQ container
-rabbitmq-pod-start: hosts-check
+rabbitmq-pod-start: hosts-check adjust-linux-permissions
 	@echo "Starting RabbitMQ container (${CONTAINER_NAME}) with image ${PODMAN_IMAGE_NAME}..."
 	@if ! podman container exists $(CONTAINER_NAME) || ! podman container inspect $(CONTAINER_NAME) --format "{{.State.Running}}" | grep -q "true"; then \
         if podman container exists $(CONTAINER_NAME); then \
