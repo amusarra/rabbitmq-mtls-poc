@@ -1,7 +1,7 @@
 .PHONY: all certs server-certs client-certs rabbitmq-pod-start rabbitmq-pod-stop rabbitmq-pod-rm rabbitmq-setup-permissions rabbitmq-setup-topology rabbitmq-logs producer consumer clean hosts-check requirements help print-rabbitmq-fqdn print-container-name
 
 # Variables
-PODMAN_IMAGE_NAME = rabbitmq:4.1-management
+PODMAN_IMAGE_NAME = docker.io/library/rabbitmq:4.1-management
 CONTAINER_NAME = rabbitmq-dev-server
 RABBITMQ_FQDN = rabbitmq.labs.dontesta.it
 VHOST_NAME = logistics_vhost
