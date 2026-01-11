@@ -1,6 +1,6 @@
-# RabbitMQ 4.1 mTLS e AMQP 1.0 - Proof of Concept
+# RabbitMQ 4.2 mTLS e AMQP 1.0 - Proof of Concept
 
-Questo progetto è un Proof of Concept (PoC) che dimostra come configurare un ambiente RabbitMQ 4.1 (o successivo) per utilizzare la mutua autenticazione TLS (mTLS) e il protocollo AMQP 1.0. L'obiettivo è fornire una guida pratica e uno scenario di sviluppo che rispecchi da vicino le configurazioni di produzione sicure.
+Questo progetto è un Proof of Concept (PoC) che dimostra come configurare un ambiente RabbitMQ 4.2 (o successivo) per utilizzare la mutua autenticazione TLS (mTLS) e il protocollo AMQP 1.0. L'obiettivo è fornire una guida pratica e uno scenario di sviluppo che rispecchi da vicino le configurazioni di produzione sicure.
 
 ## Caratteristiche Principali
 
