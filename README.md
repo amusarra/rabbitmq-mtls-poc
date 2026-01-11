@@ -1,4 +1,4 @@
-# RabbitMQ 4.1 mTLS and AMQP 1.0 - Proof of Concept
+# RabbitMQ 4.2 mTLS and AMQP 1.0 - Proof of Concept
 
 [![Antonio Musarra's Blog](https://img.shields.io/badge/maintainer-Antonio_Musarra's_Blog-purple.svg?colorB=6e60cc)](https://www.dontesta.it)
 [![Keep a Changelog v1.1.0 badge](https://img.shields.io/badge/changelog-Keep%20a%20Changelog%20v1.1.0-%23E05735)](CHANGELOG.md)
@@ -6,7 +6,7 @@
 
 [![CI Build and Test](https://github.com/amusarra/rabbitmq-mtls-poc/actions/workflows/ci.yml/badge.svg)](https://github.com/amusarra/rabbitmq-mtls-poc/actions/workflows/ci.yml)
 
-This project is a Proof of Concept (PoC) that demonstrates how to configure a RabbitMQ 4.1 (or later) environment to use mutual TLS authentication (mTLS) and the AMQP 1.0 protocol. The goal is to provide a practical guide and a development scenario that closely mirrors secure production configurations.
+This project is a Proof of Concept (PoC) that demonstrates how to configure a RabbitMQ 4.2 (or later) environment to use mutual TLS authentication (mTLS) and the AMQP 1.0 protocol. The goal is to provide a practical guide and a development scenario that closely mirrors secure production configurations.
 
 ## Main Features
 

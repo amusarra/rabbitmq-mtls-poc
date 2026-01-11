@@ -1,7 +1,7 @@
 .PHONY: all certs server-certs client-certs rabbitmq-pod-start rabbitmq-pod-stop rabbitmq-pod-rm rabbitmq-setup-permissions rabbitmq-setup-topology rabbitmq-logs producer consumer clean hosts-check requirements help print-rabbitmq-fqdn print-container-name
 
 # Variables
-PODMAN_IMAGE_NAME = docker.io/library/rabbitmq:4.1-management
+PODMAN_IMAGE_NAME = docker.io/library/rabbitmq:4.2.2-management
 CONTAINER_NAME = rabbitmq-dev-server
 RABBITMQ_FQDN = rabbitmq.labs.dontesta.it
 VHOST_NAME = logistics_vhost
@@ -206,9 +206,9 @@ rabbitmq-setup-permissions:
 rabbitmq-setup-topology:
 	@echo "Configuration topology RabbitMQ (exchange, queue, binding) with user ${RABBITMQ_ADMIN_USER}..."
 	@sleep 2
-	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare exchange name=order_exchange type=direct durable=true || echo "Exchange order_exchange already exists or error."
-	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare queue name=logistics_queue durable=true || echo "Queue logistics_queue already exists or error."
-	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare binding source="order_exchange" destination_type="queue" destination="logistics_queue" routing_key="new_order_event" || echo "Binding already exists or error."
+	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare exchange --name order_exchange --type direct --durable true || echo "Exchange order_exchange already exists or error."
+	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare queue --name logistics_queue --durable true || echo "Queue logistics_queue already exists or error."
+	podman exec ${CONTAINER_NAME} rabbitmqadmin -u ${RABBITMQ_ADMIN_USER} -p ${RABBITMQ_ADMIN_PASS} -V ${VHOST_NAME} declare binding --source order_exchange --destination-type queue --destination logistics_queue --routing-key new_order_event || echo "Binding already exists or error."
 	@echo "Topology configured."
 
 # Show RabbitMQ logs
